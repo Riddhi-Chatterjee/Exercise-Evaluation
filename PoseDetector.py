@@ -71,12 +71,12 @@ class poseDetector:
             for id, lm in enumerate(self.results.pose_landmarks.landmark):
                 h, w, c = img.shape
                 #print(id, lm)
-                cx, cy = int(lm.x * w), int(lm.y * h)
-                cz = int(lm.z * w)
+                cx, cy = (lm.x * w), (lm.y * h)
+                cz = (lm.z * w)
                 visibility = lm.visibility
                 lmList.append([id, cx, (-1)*cy, cz, visibility])
                 if draw:
-                    cv2.circle(img, (cx, cy), 5, (255, 0 , 0), cv2.FILLED)
+                    cv2.circle(img, (int(cx), int(cy)), 5, (255, 0 , 0), cv2.FILLED)
         return lmList
     
     
@@ -254,7 +254,7 @@ class poseDetector:
     
 
 def main(): #Put testing script
-    cap = cv2.VideoCapture("media/trainVideos/1/V40.mp4") #Replace 0 with the video filename for reading from video files
+    cap = cv2.VideoCapture("Exercises/3/videos/V67/V67.mp4") #Replace 0 with the video filename for reading from video files
     #pTime = 0
     detector = poseDetector("V", 2) #Currently set for 2D pose detection
     start_time = time.time()
