@@ -254,7 +254,7 @@ class poseDetector:
     
 
 def main(): #Put testing script
-    cap = cv2.VideoCapture("Exercises/3/videos/V67/V67.mp4") #Replace 0 with the video filename for reading from video files
+    cap = cv2.VideoCapture("/Users/riddhichatterjee/SummerProject2022/Junkyard/Exercise-Assistant/EA-PyTorch/KiMoRe_rgb/CG/Expert/E_ID16/Es1/rgb/Blur_rgb160616_155807.mp4") #Replace 0 with the video filename for reading from video files
     #pTime = 0
     detector = poseDetector("V", 2) #Currently set for 2D pose detection
     start_time = time.time()

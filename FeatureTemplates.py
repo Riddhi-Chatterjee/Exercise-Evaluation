@@ -6,6 +6,7 @@ class feature:
     
     def __init__(self, parameters, isEssential, visThreshold):
         self.parameters = parameters
+        self.original_parameters = parameters
         self.isEssential = isEssential
         self.visThreshold = visThreshold
         self.keypoints = []
@@ -20,6 +21,32 @@ class feature:
         if not allVisible:
             self.value = ["None" for x in self.value]
         return allVisible
+    
+    def normaliseKeypoints(self, id1, id2, keypoints):
+        x = (keypoints[id1][1] + keypoints[id2][1])/2
+        y = (keypoints[id1][2] + keypoints[id2][2])/2
+        z = (keypoints[id1][3] + keypoints[id2][3])/2
+        
+        visibility = min(keypoints[id1][4], keypoints[id2][4])
+        
+        id = len(keypoints)
+        
+        keypoints.append([id, x, y, z, visibility])
+        return keypoints
+    
+    def loadData(self, keypoints):
+        self.parameters = []
+        i=0
+        while(i<len(self.original_parameters)):
+            if (type(self.original_parameters[i]) != int) and (self.original_parameters[i].lower() == 'm'):
+                self.parameters.append(len(keypoints))
+                keypoints = self.normaliseKeypoints(self.original_parameters[i+1], self.original_parameters[i+2], keypoints)
+                i = i + 3
+            else:
+                self.parameters.append(self.original_parameters[i])
+                i += 1
+        
+        self.keypoints = keypoints
         
 
 class distance_2D(feature):
@@ -27,11 +54,8 @@ class distance_2D(feature):
     def __init__(self, parameters, isEssential, visThreshold):
         feature.__init__(self, parameters, isEssential, visThreshold)
         self.type = '2d'
-
-    def loadData(self, keypoints):
-        self.keypoints = keypoints
     
-    def calculate(self, video):
+    def calculate(self, video, o_fps):
         if len(self.parameters) != 2 and len(self.parameters) != 4:
             return
         
@@ -86,10 +110,7 @@ class keypoint_2D(feature):
         feature.__init__(self, parameters, isEssential, visThreshold)
         self.type = '2k'
 
-    def loadData(self, keypoints):
-        self.keypoints = keypoints
-
-    def calculate(self, video):
+    def calculate(self, video, o_fps):
         if len(self.parameters) != 1:
             return
         
@@ -104,10 +125,7 @@ class angle_2D(feature):
         feature.__init__(self, parameters, isEssential, visThreshold)
         self.type = '2a'
 
-    def loadData(self, keypoints):
-        self.keypoints = keypoints
-
-    def calculate(self, video):
+    def calculate(self, video, o_fps):
         if len(self.parameters) != 3:
             return
 
@@ -177,30 +195,29 @@ class velocity_2D(feature):
         feature.__init__(self, parameters, isEssential, visThreshold)
         self.type = '2v'
         self.video = -1
-        self.prevTime = -1
-        self.currTime = -1
+        #self.prevTime = -1
+        #self.currTime = -1
         self.prevKeypoints = []
         self.currKeypoints = []
+        self.factor = 1
         
-    def loadData(self, keypoints):
-        self.keypoints = keypoints
-        
-    def calculate(self, video): #Currently calculating velocities in pixels/ms
+    def calculate(self, video, o_fps): #Currently, unit of time used in calculations is sec
         if len(self.parameters) != 1 and len(self.parameters) != 2 and len(self.parameters) != 3 and len(self.parameters) != 4:
             return
         
         if self.checkVisibility():
             if video != self.video:
-                self.prevTime = time.time()*1000000
+                #self.prevTime = time.time()*1000000
                 self.prevKeypoints = self.keypoints
                 self.video = video
                 self.value = ["None", "None"]
 
             else:
-                self.currTime = time.time()*1000000
+                #self.currTime = time.time()*1000000
                 self.currKeypoints = self.keypoints
 
-                tDiffMili = (self.currTime - self.prevTime)/1000
+                #tDiffMili = (self.currTime - self.prevTime)/1000
+                tDiffSec = (self.factor/o_fps)
                 
                 if len(self.parameters) == 1:
                     prevPoint = []
@@ -214,7 +231,7 @@ class velocity_2D(feature):
                     currPoint = np.array(currPoint)
                     
                     d = currPoint - prevPoint
-                    self.value = list(d/tDiffMili)
+                    self.value = list(d/tDiffSec)
                     
                 elif len(self.parameters) == 2:
                     pass
@@ -225,7 +242,9 @@ class velocity_2D(feature):
                 elif len(self.parameters) == 4: #Scaled velocity; Sample params: [0, 'r', 1, 2]
                     pass
                 
-                self.prevTime = self.currTime
+                #self.prevTime = self.currTime
                 self.prevKeypoints = self.currKeypoints
+            self.factor = 1
         else:
             self.value = ["None", "None"]
+            self.factor += 1

@@ -1,5 +1,6 @@
 from os.path import exists
 import FeatureTemplates as FT
+import cv2
 
 def strToList(st):
     factor = -1
@@ -49,16 +50,27 @@ if exists("Exercises/"+str(exercise)+"/NonEssentialFeatures.json"):
             features.append(object_dispatcher[featureType](parameters, False, visThreshold))
         
 video = 1
-while(exists("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/V"+str(video)+".mp4")):
+while(exists("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/V"+str(video)+".mp4") and exists("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/Keypoints.txt")):
     with open("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/Features.txt", "w") as f:
         with open("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/Keypoints.txt", "r") as k:
+            o_fps = 5 #Dummy initialisation
+            cap = cv2.VideoCapture("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/V"+str(video)+".mp4")
+        
+            # Finding OpenCV version:
+            (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
+
+            if int(major_ver)  < 3 :
+                o_fps = cap.get(cv2.cv.CV_CAP_PROP_FPS) 
+            else :
+                o_fps = cap.get(cv2.CAP_PROP_FPS)
+            
             for frameKeypoints in k:
                 frameKeypoints = strToList(frameKeypoints.split("\n")[0])
                 validFrame = True
                 frameFeatures = []
                 for feature in features:
                     feature.loadData(frameKeypoints)
-                    feature.calculate(video)
+                    feature.calculate(video, o_fps)
                     if feature.isEssential == True and validFrame == True:
                         for v in feature.value:
                             if v == "None":
