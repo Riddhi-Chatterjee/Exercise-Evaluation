@@ -8,6 +8,58 @@ def hasSameElements(lst1, lst2):
 def isSame(descriptor1, descriptor2):
     descriptor1 = descriptor1.lower().split(", ")
     descriptor2 = descriptor2.lower().split(", ")
+    
+    medianCheck1 = False
+    medianCheck2 = False
+    new_descriptor11 = ""
+    new_descriptor12 = ""
+    new_descriptor21 = ""
+    new_descriptor22 = ""
+    
+    i=0
+    while(i<len(descriptor1)):
+        if (type(descriptor1[i]) != int) and (descriptor1[i].lower() == 'm'):
+            medianCheck1 = True
+            new_descriptor11 += str(int(descriptor1[i+1]) + int(descriptor1[i+2]))
+            new_descriptor12 += str(abs(int(descriptor1[i+1]) - int(descriptor1[i+2])))
+            if ((i+2) != (len(descriptor1) - 1)):
+                new_descriptor11 += ", "
+                new_descriptor12 += ", "
+            i = i + 3
+        else:
+            new_descriptor11 += descriptor1[i]
+            new_descriptor12 += descriptor1[i]
+            if i != len(descriptor1) - 1:
+                new_descriptor11 += ", "
+                new_descriptor12 += ", "
+            i += 1
+          
+    i=0
+    while(i<len(descriptor2)):
+        if (type(descriptor2[i]) != int) and (descriptor2[i].lower() == 'm'):
+            medianCheck2 = True
+            new_descriptor21 += str(int(descriptor2[i+1]) + int(descriptor2[i+2]))
+            new_descriptor22 += str(abs(int(descriptor2[i+1]) - int(descriptor2[i+2])))
+            if ((i+2) != (len(descriptor2) - 1)):
+                new_descriptor21 += ", "
+                new_descriptor22 += ", "
+            i = i + 3
+        else:
+            new_descriptor21 += descriptor2[i]
+            new_descriptor22 += descriptor2[i]
+            if i != len(descriptor2) - 1:
+                new_descriptor21 += ", "
+                new_descriptor22 += ", "
+            i += 1
+    
+    if medianCheck1 != medianCheck2:
+        return False
+    if (medianCheck1 == True) and (medianCheck2 == True):
+        if (isSame(new_descriptor11, new_descriptor21)) and (isSame(new_descriptor12, new_descriptor22)):
+            return True
+        else:
+            return False
+                
     if (descriptor1[0] != descriptor2[0]) or (descriptor1[1] != descriptor2[1]) or (len(descriptor1) != len(descriptor2)):
         return False
     

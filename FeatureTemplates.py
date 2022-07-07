@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import time
+import sys
 
 class feature:
     
@@ -15,7 +16,7 @@ class feature:
     def checkVisibility(self):
         allVisible = True
         for parameter in self.parameters:
-            if self.keypoints[parameter][4] < self.visThreshold:
+            if (type(parameter) == int) and (self.keypoints[parameter][4] < self.visThreshold):
                 allVisible = False
                 break
         if not allVisible:
@@ -126,7 +127,7 @@ class angle_2D(feature):
         self.type = '2a'
 
     def calculate(self, video, o_fps):
-        if len(self.parameters) != 3:
+        if len(self.parameters) != 4:
             return
 
         first_point = []
@@ -168,7 +169,7 @@ class angle_2D(feature):
             dir = ["None"]
         else:
             if modCrossProd != 0:
-                dir = list(crossProd/modCrossProd)
+                dir = [crossProd/modCrossProd]
             else:
                 dir = ["None"]
                
@@ -177,7 +178,6 @@ class angle_2D(feature):
                 ang = [self.toDegree(math.acos(cos))]
             else:
                 ang = ["None"]
-                dir = ["None"]
                 
         if self.parameters[3].lower() == 'd':
             self.value = ang + dir
@@ -201,6 +201,23 @@ class velocity_2D(feature):
         self.currKeypoints = []
         self.factor = 1
         
+    def findAngVel(currA, vA, currB, vB):
+        rAB = currA - currB
+        modrAB = np.linalg.norm(rAB)
+        vAB = vA - vB
+        modvAB = np.linalg.norm(vAB)
+        
+        crossProd = np.cross(rAB, vAB)
+        modCrossProd = np.linalg.norm(crossProd)
+        
+        dir = ["None"]
+        mag = ["None"]
+        if modCrossProd != 0:
+            dir = [crossProd/modCrossProd]
+        if modrAB != 0:
+            mag = [modvAB/modrAB]
+        return mag + dir
+        
     def calculate(self, video, o_fps): #Currently, unit of time used in calculations is sec
         if len(self.parameters) != 1 and len(self.parameters) != 2 and len(self.parameters) != 3 and len(self.parameters) != 4:
             return
@@ -217,6 +234,10 @@ class velocity_2D(feature):
                 self.currKeypoints = self.keypoints
 
                 #tDiffMili = (self.currTime - self.prevTime)/1000
+                if o_fps == 0:
+                    print("\nExiting: FPS = 0 for video = "+str(video)+"\n")
+                    sys.exit(0)
+                    
                 tDiffSec = (self.factor/o_fps)
                 
                 if len(self.parameters) == 1:
@@ -234,13 +255,126 @@ class velocity_2D(feature):
                     self.value = list(d/tDiffSec)
                     
                 elif len(self.parameters) == 2:
-                    pass
+                    prevA = []
+                    prevA.append(self.prevKeypoints[self.parameters[0]][1])
+                    prevA.append(self.prevKeypoints[self.parameters[0]][2])
+                    prevA = np.array(prevA)
+                    
+                    currA = []
+                    currA.append(self.currKeypoints[self.parameters[0]][1])
+                    currA.append(self.currKeypoints[self.parameters[0]][2])
+                    currA = np.array(currA)
+                    
+                    dA = currA - prevA
+                    vA = dA/tDiffSec
+                    
+                    
+                    prevB = []
+                    prevB.append(self.prevKeypoints[self.parameters[1]][1])
+                    prevB.append(self.prevKeypoints[self.parameters[1]][2])
+                    prevB = np.array(prevB)
+                    
+                    currB = []
+                    currB.append(self.currKeypoints[self.parameters[1]][1])
+                    currB.append(self.currKeypoints[self.parameters[1]][2])
+                    currB = np.array(currB)
+                    
+                    dB = currB - prevB
+                    vB = dB/tDiffSec
+                    
+                    self.value = self.findAngVel(currA, vA, currB, vB)
                 
                 elif len(self.parameters) == 3:
-                    pass
-                
+                    prevA = []
+                    prevA.append(self.prevKeypoints[self.parameters[0]][1])
+                    prevA.append(self.prevKeypoints[self.parameters[0]][2])
+                    prevA = np.array(prevA)
+                    
+                    currA = []
+                    currA.append(self.currKeypoints[self.parameters[0]][1])
+                    currA.append(self.currKeypoints[self.parameters[0]][2])
+                    currA = np.array(currA)
+                    
+                    dA = currA - prevA
+                    vA = dA/tDiffSec
+                    
+                    
+                    prevB = []
+                    prevB.append(self.prevKeypoints[self.parameters[1]][1])
+                    prevB.append(self.prevKeypoints[self.parameters[1]][2])
+                    prevB = np.array(prevB)
+                    
+                    currB = []
+                    currB.append(self.currKeypoints[self.parameters[1]][1])
+                    currB.append(self.currKeypoints[self.parameters[1]][2])
+                    currB = np.array(currB)
+                    
+                    dB = currB - prevB
+                    vB = dB/tDiffSec
+                    
+                    
+                    prevC = []
+                    prevC.append(self.prevKeypoints[self.parameters[2]][1])
+                    prevC.append(self.prevKeypoints[self.parameters[2]][2])
+                    prevC = np.array(prevC)
+                    
+                    currC = []
+                    currC.append(self.currKeypoints[self.parameters[2]][1])
+                    currC.append(self.currKeypoints[self.parameters[2]][2])
+                    currC = np.array(currC)
+                    
+                    dC = currC - prevC
+                    vC = dC/tDiffSec
+                    
+                    omega1 = self.findAngVel(currA, vA, currB, vB)
+                    omega2 = self.findAngVel(currC, vC, currB, vB)
+                    
+                    if (omega1[0] == "None") or (omega1[1] == "None") or (omega2[0] == "None") or (omega2[1] == "None"):
+                        self.value = ["None", "None"]
+                    else:
+                        omega1 = omega1[0] * omega1[1]
+                        omega2 = omega2[0] * omega2[1]
+                        omega = omega1 - omega2
+                        
+                        dir = ["None"]
+                        mag = ["None"]
+                        if abs(omega) != 0:
+                            dir = [omega/abs(omega)]
+                        mag = [abs(omega)]
+                        
+                        self.value = mag + dir
+                    
                 elif len(self.parameters) == 4: #Scaled velocity; Sample params: [0, 'r', 1, 2]
-                    pass
+                    prevPoint = []
+                    prevPoint.append(self.prevKeypoints[self.parameters[0]][1])
+                    prevPoint.append(self.prevKeypoints[self.parameters[0]][2])
+                    prevPoint = np.array(prevPoint)
+                    
+                    currPoint = []
+                    currPoint.append(self.currKeypoints[self.parameters[0]][1])
+                    currPoint.append(self.currKeypoints[self.parameters[0]][2])
+                    currPoint = np.array(currPoint)
+                    
+                    d = currPoint - prevPoint
+                    
+                    first_point = []
+                    first_point.append(self.keypoints[self.parameters[2]][1])
+                    first_point.append(self.keypoints[self.parameters[2]][2])
+                    first_point = np.array(first_point)
+                    
+                    second_point = []
+                    second_point.append(self.keypoints[self.parameters[3]][1])
+                    second_point.append(self.keypoints[self.parameters[3]][2])
+                    second_point = np.array(second_point)
+                    
+                    L = second_point - first_point
+                    modL = np.linalg.norm(L)
+                    
+                    if modL == 0:
+                        self.value = ["None", "None"]
+                    else:
+                        self.value = list(d/(modL * tDiffSec))
+                    
                 
                 #self.prevTime = self.currTime
                 self.prevKeypoints = self.currKeypoints
