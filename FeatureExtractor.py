@@ -22,11 +22,11 @@ object_dispatcher = {
     '2d': FT.distance_2D,
     '2k': FT.keypoint_2D,
     '2a': FT.angle_2D,
-    '2v': FT.velocity_2D,
-    '3d': FT.distance_3D,
-    '3k': FT.keypoint_3D,
-    '3a': FT.angle_3D,
-    '3v': FT.velocity_3D
+    '2v': FT.velocity_2D
+    #'3d': FT.distance_3D,
+    #'3k': FT.keypoint_3D,
+    #'3a': FT.angle_3D,
+    #'3v': FT.velocity_3D
 }
 
 exercise = int(input("Enter exercise number: "))
@@ -79,8 +79,12 @@ while(exists("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/V"+str(video)+"
                     #if not validFrame:
                     #    break
                 
-                    s = str(feature.parameters)
-                    descriptor = feature.type[0]+", "+feature.type[1]+", "+s[1:len(s)-1]
+                    s = ""
+                    for p in feature.original_parameters:
+                        s += ", "
+                        s += str(p)
+                        
+                    descriptor = feature.type[0]+", "+feature.type[1]+s
                     frameFeatures.append([descriptor, feature.value])
                 if validFrame:
                     f.write(str(frameFeatures)+"\n")
