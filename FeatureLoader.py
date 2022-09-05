@@ -154,7 +154,7 @@ def isPresent(path, descriptor):
         return False
 
 def addFeature(path, descriptor, exercise):
-    if isPresent("Exercises/"+str(exercise)+"/EssentialFeatures.json", descriptor) or isPresent("Exercises/"+str(exercise)+"/NonEssentialFeatures.json", descriptor):
+    if isPresent("Exercises/"+str(exercise)+"/EssentialFeatures.csv", descriptor) or isPresent("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv", descriptor):
         print("This feature is already added for this exercise!")
     else:
         with open(path, "a") as f:
@@ -162,37 +162,37 @@ def addFeature(path, descriptor, exercise):
 
 def deleteFeature(exercise, descriptor):
     path = ""
-    if isPresent("Exercises/"+str(exercise)+"/EssentialFeatures.json", descriptor):
-        path = "Exercises/"+str(exercise)+"/EssentialFeatures.json"
-    elif isPresent("Exercises/"+str(exercise)+"/NonEssentialFeatures.json", descriptor):
-        path = "Exercises/"+str(exercise)+"/NonEssentialFeatures.json"
+    if isPresent("Exercises/"+str(exercise)+"/EssentialFeatures.csv", descriptor):
+        path = "Exercises/"+str(exercise)+"/EssentialFeatures.csv"
+    elif isPresent("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv", descriptor):
+        path = "Exercises/"+str(exercise)+"/NonEssentialFeatures.csv"
     else:
         print("This feature is already deleted for this exercise")
         return
     
-    with open("Buffer.json", "w") as b:
+    with open("Buffer.csv", "w") as b:
         with open(path, "r") as f:
             for line in f:
                 if isSame(descriptor.lower(), line.split("\n")[0].lower()):
                     continue
                 b.write(line)
     
-    with open("Buffer.json", "r") as b:
+    with open("Buffer.csv", "r") as b:
         with open(path, "w") as f:
             for line in b:
                 f.write(line)
     
-    os.remove("Buffer.json")
+    os.remove("Buffer.csv")
 
 def printFeatures(exercise):
-    if exists("Exercises/"+str(exercise)+"/EssentialFeatures.json"):
-        with open("Exercises/"+str(exercise)+"/EssentialFeatures.json", "r") as ef:
+    if exists("Exercises/"+str(exercise)+"/EssentialFeatures.csv"):
+        with open("Exercises/"+str(exercise)+"/EssentialFeatures.csv", "r") as ef:
             print("Essential features:")
             for line in ef:
                 print(line)
     print("")
-    if exists("Exercises/"+str(exercise)+"/NonEssentialFeatures.json"):
-        with open("Exercises/"+str(exercise)+"/NonEssentialFeatures.json", "r") as nef:
+    if exists("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv"):
+        with open("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv", "r") as nef:
             print("Non-Essential features:")
             for line in nef:
                 print(line)
@@ -213,9 +213,9 @@ if ch == 1:
         print("")
         ch1 = input("Is the feature essential? Y/N: ")
         if ch1.lower() == 'y':
-            path = "Exercises/"+str(exercise)+"/EssentialFeatures.json"
+            path = "Exercises/"+str(exercise)+"/EssentialFeatures.csv"
         else:
-            path = "Exercises/"+str(exercise)+"/NonEssentialFeatures.json"
+            path = "Exercises/"+str(exercise)+"/NonEssentialFeatures.csv"
         
         descriptor = ""
         descriptor += input("Enter the dimension of the feature: ")

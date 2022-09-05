@@ -3,6 +3,8 @@ import FeatureTemplates as FT
 import cv2
 
 def strToList(st):
+    if st == '[]':
+        return []
     factor = -1
     for ch in st:
         if ch != '[':
@@ -18,35 +20,26 @@ def strToList(st):
     return lst
 
 visThreshold = 0.5
-object_dispatcher = {
-    '2d': FT.distance_2D,
-    '2k': FT.keypoint_2D,
-    '2a': FT.angle_2D,
-    '2v': FT.velocity_2D
-    #'3d': FT.distance_3D,
-    #'3k': FT.keypoint_3D,
-    #'3a': FT.angle_3D,
-    #'3v': FT.velocity_3D
-}
+object_dispatcher = FT.object_dispatcher
 
 exercise = int(input("Enter exercise number: "))
 features = []
-if exists("Exercises/"+str(exercise)+"/EssentialFeatures.json"):
-    with open("Exercises/"+str(exercise)+"/EssentialFeatures.json", "r") as ef:
+if exists("Exercises/"+str(exercise)+"/EssentialFeatures.csv"):
+    with open("Exercises/"+str(exercise)+"/EssentialFeatures.csv", "r") as ef:
         for line in ef:
             line = line.split("\n")[0].lower()
             components = line.split(", ")
             featureType = components[0] + components[1]
-            parameters = [int(x) if x.isdigit() else x for x in components[2:]]
+            parameters = [int(x) if x.isdigit() else x.lower() for x in components[2:]]
             features.append(object_dispatcher[featureType](parameters, True, visThreshold))
 
-if exists("Exercises/"+str(exercise)+"/NonEssentialFeatures.json"):
-    with open("Exercises/"+str(exercise)+"/NonEssentialFeatures.json", "r") as nef:
+if exists("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv"):
+    with open("Exercises/"+str(exercise)+"/NonEssentialFeatures.csv", "r") as nef:
         for line in nef:
             line = line.split("\n")[0].lower()
             components = line.split(", ")
             featureType = components[0] + components[1]
-            parameters = [int(x) if x.isdigit() else x for x in components[2:]]
+            parameters = [int(x) if x.isdigit() else x.lower() for x in components[2:]]
             features.append(object_dispatcher[featureType](parameters, False, visThreshold))
         
 video = 1
@@ -84,7 +77,7 @@ while(exists("Exercises/"+str(exercise)+"/videos/V"+str(video)+"/V"+str(video)+"
                         s += ", "
                         s += str(p)
                         
-                    descriptor = feature.type[0]+", "+feature.type[1]+s
+                    descriptor = feature.type[0]+", "+feature.type[1:]+s
                     frameFeatures.append([descriptor, feature.value])
                 if validFrame:
                     f.write(str(frameFeatures)+"\n")

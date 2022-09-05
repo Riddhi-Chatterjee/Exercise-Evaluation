@@ -1,4 +1,5 @@
 import datasetHandler
+import VS_LSTM
 import LSTM
 import signal
 import sys
@@ -14,10 +15,9 @@ def signal_handler(sig, frame):
     "epoch": epoch,
     "model_state": model.state_dict(),
     "optim_state": optimizer.state_dict(),
-    "dataset_number" : datasetNum,
-    "batch_number" : batchNum
+    "batch_number" : batchNum,
     }
-    FILE = "checkpoint.pth"
+    FILE = "Exercises/"+str(exercise)+"/checkpoint.pth"
     torch.save(checkpoint, FILE)
     
     print('\nExiting...')
@@ -25,94 +25,112 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-#Settings:
-numClasses = 1
-seqLen = 20
-samplingPeriod = 0.2
-learning_rate = 0.01
-num_epochs = 2001
-model = LSTM.LSTM(numClasses, seqLen)
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-criterion = nn.MSELoss()
-printingBatch = 0
-printingDataset = 1
+exercise = int(input("Enter the exercise number: "))
 
-datasetNum = 1
+with open("Exercises/"+str(exercise)+"/Settings.txt", 'r') as s:
+    for line in s:
+        line = line.split("\n")[0]
+        data = line.split(" = ")[1]
+        tag = line.split(" = ")[0]
+        if tag == "learning_rate":
+            learning_rate = float(data)
+        elif tag == "num_epochs":
+            num_epochs = int(data)
+        elif tag == "num_layers":
+            num_layers = int(data)
+        elif tag == "batchSize":
+            batchSize = int(data)
+        elif tag == "printingBatch":
+            printingBatch = int(data)
+
+#Settings:
+criterion = nn.MSELoss()
+dataset = datasetHandler.LSTMdataset("Exercises/"+str(exercise), "train_dataset.txt")
+#total_samples = len(dataset)
+#n_iterations = math.ceil(total_samples/batchSize)
+inputSize = len(dataset[0][0][0])
+model = VS_LSTM.LSTM(num_layers, inputSize*2, inputSize)
+#model = LSTM.LSTM(1, len(dataset[0][0]), inputSize)
+optimizer = torch.optim.Adagrad(model.parameters(), lr=learning_rate)
+
 epoch = 0
 batchNum = 0
 loss = "Dummy Initialisation"
 
 ch = input("Use existing datasets? Y/N: ")
-if ch=="N":
-    dh = datasetHandler.datasetHandler(seqLen, samplingPeriod)
+if ch.upper() == "N":
+    ds = datasetHandler.datasetHandler()
+    ds.createDataset(exercise)
+    ds.shuffleDataset("Exercises/"+str(exercise), "master_dataset.txt")
+    ds.splitDataset("Exercises/"+str(exercise), "master_dataset.txt")
     
-    dh.createTrainingDataset()
-    
-    dh.shuffleDataset("datasets/Train_Datasets", "master_dataset.txt")
-    dh.splitDataset("datasets/Train_Datasets", "master_dataset.txt")
-    
-    with open("checkpoint.pth", "w") as c:
+    with open("Exercises/"+str(exercise)+"/checkpoint.pth", "w") as c:
         pass
 else:
     ch1 = input("Start training from scratch? Y/N: ")
-    if ch1 == "Y":
-        with open("checkpoint.pth", "w") as c:
+    if ch1.upper() == "Y":
+        with open("Exercises/"+str(exercise)+"/checkpoint.pth", "w") as c:
             pass
     else:
-        FILE = "checkpoint.pth"
+        FILE = "Exercises/"+str(exercise)+"/checkpoint.pth"
         checkpoint = torch.load(FILE)
         model.load_state_dict(checkpoint['model_state'])
         optimizer.load_state_dict(checkpoint['optim_state'])
         epoch = checkpoint['epoch']
-        datasetNum = checkpoint['dataset_number']
         batchNum = checkpoint['batch_number']
-        with open("checkpoint.pth", "w") as c:
+        with open("Exercises/"+str(exercise)+"/checkpoint.pth", "w") as c:
             pass
- 
+
 print("\nStarting from:")
 print("epoch = "+str(epoch))
-print("datasetNum = "+str(datasetNum))
-print("batchNum = "+str(batchNum)+"\n")      
+print("batchNum = "+str(batchNum))
+print("batchSize = "+str(batchSize)+"\n")
+
+train_loader = DataLoader(dataset=dataset,
+                      batch_size=batchSize,
+                      shuffle=False,
+                      num_workers=0)      
+
 while(epoch < num_epochs):    
-    while(exists("datasets/Train_Datasets/dataset_"+str(datasetNum)+".txt")):
-        dataset = datasetHandler.LSTMdataset("datasets/Train_Datasets", datasetNum)
-        train_loader = DataLoader(dataset=dataset,
-                              batch_size=model.batch_size,
-                              shuffle=False,
-                              num_workers=0)
 
-        #total_samples = len(dataset)
-        #n_iterations = math.ceil(total_samples/model.batch_size)
+    ##########################################################
+    for i, (inputs, labels, seqLens) in enumerate(train_loader):
+        if i == batchNum:
+            seqLens = seqLens.view(seqLens.size(0))
+            seqLens = [int(x) for x in seqLens]
+            # Forward pass and loss
+            y_pred = model(inputs, seqLens)
+            
+            #y_pred = model(inputs)
+            #y_pred = y_pred.view(y_pred.size(0))
+            
+            labels = labels.view(labels.size(0))
+            #labels = labels.long()
+            
+            loss = criterion(y_pred, labels)
+            if batchNum == printingBatch:
+                print("Epoch : "+str(epoch)+"  BatchNum : "+str(i)+"  Loss : "+str(loss.item()))
+                print("")
+                print("y_pred:")
+                print(y_pred)
+                print("")
+                print("labels:")
+                print(labels)
+                print("\n")
+            
+            
+            # Backward pass and update
+            loss.backward()
+            optimizer.step()  
+                          
+            # zero grad before new step
+            optimizer.zero_grad()
+            
+            batchNum += 1
 
-        ##########################################################
-
-        for i, (inputs, labels) in enumerate(train_loader):
-            if i == batchNum:
-                # Forward pass and loss
-                y_pred = model(inputs)
-                y_pred = y_pred.view(y_pred.size(0))
-                
-                labels = labels.view(labels.size(0))
-                #labels = labels.long()
-                loss = criterion(y_pred, labels)
-                if datasetNum == printingDataset and batchNum == printingBatch:
-                    print("Epoch : "+str(epoch)+"  Loss : "+str(loss.item()))
-                    print("")
-                
-                # Backward pass and update
-                loss.backward()
-                optimizer.step()  
-                              
-                # zero grad before new step
-                optimizer.zero_grad()
-                
-                batchNum += 1
-
-        ##########################################################
-        
-        datasetNum += 1
-        batchNum = 0
+    ##########################################################
+    
+    batchNum = 0
     epoch += 1
-    datasetNum = 1
 
 signal_handler(0, 0)

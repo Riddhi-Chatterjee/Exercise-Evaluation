@@ -11,23 +11,24 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 class LSTM(nn.ModuleList):
-    MAX_X_LENGTH = 30
-    def __init__(self, numClasses, seqLen):
+    def __init__(self, numClasses, seqLen, inputSize):
         super(LSTM, self).__init__()      
               
+        self.MAX_X_LENGTH = inputSize
+        
         # Number of samples per time step:
         self.batch_size = 720         
         
         # Dimension of hidden states:
-        factor = (LSTM.MAX_X_LENGTH - numClasses)/4
-        self.hidden_dim_1 = LSTM.MAX_X_LENGTH
-        self.hidden_dim_2 = int(LSTM.MAX_X_LENGTH - factor)
-        self.hidden_dim_3 = int(LSTM.MAX_X_LENGTH - (2*factor))
-        self.hidden_dim_4 = int(LSTM.MAX_X_LENGTH - (3*factor))
-        #self.hidden_dim_5 = int(LSTM.MAX_X_LENGTH - (4*factor))
+        factor = (self.MAX_X_LENGTH - numClasses)/4
+        self.hidden_dim_1 = self.MAX_X_LENGTH
+        self.hidden_dim_2 = int(self.MAX_X_LENGTH - factor)
+        self.hidden_dim_3 = int(self.MAX_X_LENGTH - (2*factor))
+        self.hidden_dim_4 = int(self.MAX_X_LENGTH - (3*factor))
+        #self.hidden_dim_5 = int(self.MAX_X_LENGTH - (4*factor))
         
         # Input size
-        self.inputSize = LSTM.MAX_X_LENGTH          
+        self.inputSize = self.MAX_X_LENGTH          
                
         # Number of time steps
         self.seqLen = seqLen           
@@ -50,17 +51,20 @@ class LSTM(nn.ModuleList):
         #Creating a fully-connected layer
         self.fully_connected = nn.Linear(self.hidden_dim_4, numClasses)
         
+        #Sigmoid layer:
+        self.sigmoid = nn.Sigmoid()
+        
     def forward(self, x):
-        hidden_state_1 = torch.zeros(x.size(0), self.hidden_dim_1)
-        cell_state_1 = torch.zeros(x.size(0), self.hidden_dim_1)
-        hidden_state_2 = torch.zeros(x.size(0), self.hidden_dim_2)
-        cell_state_2 = torch.zeros(x.size(0), self.hidden_dim_2)
-        hidden_state_3 = torch.zeros(x.size(0), self.hidden_dim_3)
-        cell_state_3 = torch.zeros(x.size(0), self.hidden_dim_3)
-        hidden_state_4 = torch.zeros(x.size(0), self.hidden_dim_4)
-        cell_state_4 = torch.zeros(x.size(0), self.hidden_dim_4)
-        #hidden_state_5 = torch.zeros(x.size(0), self.hidden_dim_5)
-        #cell_state_5 = torch.zeros(x.size(0), self.hidden_dim_5)
+        hidden_state_1 = torch.rand(x.size(0), self.hidden_dim_1)
+        cell_state_1 = torch.rand(x.size(0), self.hidden_dim_1)
+        hidden_state_2 = torch.rand(x.size(0), self.hidden_dim_2)
+        cell_state_2 = torch.rand(x.size(0), self.hidden_dim_2)
+        hidden_state_3 = torch.rand(x.size(0), self.hidden_dim_3)
+        cell_state_3 = torch.rand(x.size(0), self.hidden_dim_3)
+        hidden_state_4 = torch.rand(x.size(0), self.hidden_dim_4)
+        cell_state_4 = torch.rand(x.size(0), self.hidden_dim_4)
+        #hidden_state_5 = torch.rand(x.size(0), self.hidden_dim_5)
+        #cell_state_5 = torch.rand(x.size(0), self.hidden_dim_5)
         
         # state initialisation
         torch.nn.init.xavier_normal_(hidden_state_1)
@@ -87,5 +91,6 @@ class LSTM(nn.ModuleList):
             #hidden_state_5, cell_state_5 = self.lstm_cell_layer_5(hidden_state_4, (hidden_state_5, cell_state_5))
               
         # Last hidden state is passed through a fully connected neural net
-        out = self.fully_connected(hidden_state_4)	        
+        out = self.fully_connected(hidden_state_4)
+        out = (self.sigmoid(out) * 40) + 10	        
         return out

@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 
 def strToList(st):
+    if st == '[]':
+        return []
     factor = -1
     for ch in st:
         if ch != '[':

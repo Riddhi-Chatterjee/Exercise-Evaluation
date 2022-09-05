@@ -38,20 +38,23 @@ class LSTM(nn.Module):
 
     def init_hidden(self):
         # the weights are of the form (nb_layers, batch_size, nb_lstm_units)
-        hidden_a = torch.zeros(self.nb_layers, self.batch_size, self.nb_lstm_units)
-        hidden_b = torch.zeros(self.nb_layers, self.batch_size, self.nb_lstm_units)
+        hidden_a = torch.rand(self.nb_layers, self.batch_size, self.nb_lstm_units)
+        hidden_b = torch.rand(self.nb_layers, self.batch_size, self.nb_lstm_units)
 
         hidden_a = Variable(hidden_a)
         hidden_b = Variable(hidden_b)
 
         return (hidden_a, hidden_b)
 
-    def getInputs(self, X_list):
+    def getInputs(self, X, X_lengths):
+        '''
         max_len = 0
         X_lengths = []
+        num_features = 0
         for seq in X_list:
             X_lengths.append(len(seq))
-            num_features = len(seq[0])
+            if len(seq) != 0:
+                num_features = len(seq[0])
             if len(seq) > max_len:
                 max_len = len(seq)
                 
@@ -63,6 +66,7 @@ class LSTM(nn.Module):
                 X_list[i].append(padList)
         
         X = torch.tensor(X_list, dtype = torch.float32)
+        '''
         
         t = torch.tensor(X_lengths)
         sorted, indices = torch.sort(t, descending=True)
@@ -73,10 +77,10 @@ class LSTM(nn.Module):
 
         #print(X)
         #print(X_lengths)
-        return [X, X_lengths]
+        return [X, X_lengths, indices]
 
-    def forward(self, X_list):
-        X, X_lengths = self.getInputs(X_list)
+    def forward(self, X_padded, X_lengths):
+        X, X_lengths, indices = self.getInputs(X_padded, X_lengths)
         self.batch_size, seq_len, _ = X.size()
         
         # reset the LSTM hidden state. Must be done before you run a new batch. Otherwise the LSTM will treat
@@ -100,14 +104,25 @@ class LSTM(nn.Module):
         
         out = (self.sigmoid(out) * 40) + 10
         #out = (torch.tanh(out) * 20) + 30
+        
+        out_copy = torch.clone(out)
+        for ind1, ind2 in enumerate(indices):
+            out[int(ind2)] = out_copy[int(ind1)]
 
         return out
     
 def main():
-    model = LSTM(4, 10, 2)
-    X = [[[0., 5.], [2., 4.]], [[343., 43.], [0., 0.]], [[0., 5.], [2., 4.], [4., 6.], [7., 8.]]]
+    model = LSTM(4, 2*4, 4)
+    #[1, 5, 30, -1]
+    X1 = torch.tensor([[[1, 20, 45, -1], [-1, 25, 50, 1], [1, 30, 55, -1], [-1, 35, 60, 1]], [[1, 20, 45, -1], [1, 15, 40, -1], [1, 10, 35, -1], [0, 0, 0, 0]]], dtype=torch.float32)
+    X_lengths1 = [4, 3]
+    X2 = torch.tensor([[[1, 20, 45, -1], [1, 15, 40, -1], [1, 10, 35, -1], [0, 0, 0, 0]], [[1, 20, 45, -1], [-1, 25, 50, 1], [1, 30, 55, -1], [-1, 35, 60, 1]]], dtype=torch.float32)
+    X_lengths2 = [3, 4]
     #X_lengths = [4, 4, 2]
-    print(model.forward(X))
+    print("")
+    print(model(X1, X_lengths1))
+    print(model(X2, X_lengths2))
+    print("")
     
 if __name__ == "__main__":
     main()
